@@ -230,8 +230,7 @@ async function getProductByName (sender_psid, name = null) {
                 "type": "template",
                 "payload": {
                     "template_type": "generic",
-                    "image_aspect_ratio": 'square',
-                    "sharable": true,
+                    "image_aspect_ratio": "square",
                     "elements": elementsData,     
                 }
             }
