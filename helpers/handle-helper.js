@@ -199,8 +199,8 @@ async function getProductByName (sender_psid, name = null) {
         newObj.title = element.title;
         newObj.image_url = getImageCdn('https://chiaki.vn/upload/' +element.image_url, 340, 177);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
-        newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
-        newObj.subtitle = "Xuất sứ: " + element.manufacturer;
+        // newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
+        // newObj.subtitle = "Xuất sứ: " + element.manufacturer;
         newObj.default_action = {
             "type": "web_url",
             "url": "https://chiaki.vn/" + element.slug,
