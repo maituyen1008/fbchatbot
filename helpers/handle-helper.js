@@ -263,7 +263,6 @@ async function getProductAPI(name) {
     return new Promise(function(resolve, reject) {
         request({
             headers: {
-                'Content-Length': contentLength,
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             uri: "https://api.chiaki.vn/api/search/" + name + "?page_id=0&page_size=10",
