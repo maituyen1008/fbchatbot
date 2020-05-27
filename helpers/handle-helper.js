@@ -193,12 +193,14 @@ async function getProductByName (sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
     var products = await getProductAPI(name);
     var elementsData = [];
-    console.log(products.result)
+
     products.result.length > 0 && products.result.forEach(element => {
         var newObj = {};
         newObj.title = element.title;
         newObj.image_url = getImageCdn('https://chiaki.vn/upload/' +element.image_url, 340, 177);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
+        newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
+        newObj.subtitle = "Xuất sứ: " + element.manufacturer;
         newObj.default_action = {
             "type": "web_url",
             "url": "https://chiaki.vn/" + element.slug,
@@ -266,7 +268,7 @@ async function getProductAPI(name) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=10",
+            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=5",
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
