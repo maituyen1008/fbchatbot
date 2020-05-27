@@ -1,6 +1,6 @@
 const request = require('request');
 const fetch = require('node-fetch');
-var db = require('./db-helper');
+// var db = require('./db-helper');
 
 const PAGE_ACCESS_TOKEN =  process.env.PAGE_ACCESS_TOKEN;
 const SECURITY_TOKEN = process.env.SECURITY_TOKEN;
@@ -20,7 +20,7 @@ function handleMessage(sender_psid, received_message) {
         } else if (user.sender_psid == 'search_order_phone'){
             checkSearchOrderPhone(sender_psid, received_message.text);
         } else if (user.sender_psid == 'search_order_code'){
-            searchOrder(sender_psid, received_message.text);
+            searchOrderInfo(sender_psid, received_message.text);
         } else if(received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
             handlePostback(sender_psid, received_message.quick_reply);
@@ -57,12 +57,12 @@ function handlePostback(sender_psid, postback) {
         case 'CONTACT':
             contact(sender_psid);
             break;
-        case 'DELIVERY_POLICY':
-            deliveryPolicy(sender_psid);
-            break;
-        case 'PAYMENT_METHODS':
-            paymentMethods(sender_psid);
-            break;
+        // case 'DELIVERY_POLICY':
+        //     deliveryPolicy(sender_psid);
+        //     break;
+        // case 'PAYMENT_METHODS':
+        //     paymentMethods(sender_psid);
+        //     break;
         default:
     }
 }
@@ -241,7 +241,7 @@ async function getProductByName (sender_psid, name = null) {
 async function thanks (sender_psid, phone) {
     user.sender_psid == 'chatting';
     let fullName = await getFacebookName(sender_psid);
-    db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
+    // db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
     await callSendAPI(sender_psid, {
         "text": `Cảm ơn quý khách đã để lại thông tin liên hệ. Chúng tôi sẽ gọi điện cho quý khách trong thời gian sớm nhất. Trân trọng!`
     });
