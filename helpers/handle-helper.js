@@ -221,7 +221,7 @@ async function getProductByName (sender_psid, name = null) {
         // ];
         elementsData.push(newObj);
     });
-    console.log(elementsData)
+    console.log('elementsData' , elementsData)
 
     let response = {};
     if (products.result.length == 0) {
