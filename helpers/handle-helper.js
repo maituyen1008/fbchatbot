@@ -201,24 +201,24 @@ async function getProductByName (sender_psid, name = null) {
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
         // newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
         // newObj.subtitle = "Xuất sứ: " + element.manufacturer;
-        newObj.default_action = {
-            "type": "web_url",
-            "url": "https://chiaki.vn/" + element.slug,
-            "webview_height_ratio": "tall",
-        };
-        newObj.buttons = [
-            {
-                "type":"web_url",
-                "url":"https://chiaki.vn/" + element.slug,
-                "title":"Đặt hàng ngay",
-                "webview_height_ratio": "full"
-            },
-            {
-                "type": "postback",
-                "title": "Gọi tư vấn cho tôi",
-                "payload": "CONSULT_" + element.code,
-            },
-        ];
+        // newObj.default_action = {
+        //     "type": "web_url",
+        //     "url": "https://chiaki.vn/" + element.slug,
+        //     "webview_height_ratio": "tall",
+        // };
+        // newObj.buttons = [
+        //     {
+        //         "type":"web_url",
+        //         "url":"https://chiaki.vn/" + element.slug,
+        //         "title":"Đặt hàng ngay",
+        //         "webview_height_ratio": "full"
+        //     },
+        //     {
+        //         "type": "postback",
+        //         "title": "Gọi tư vấn cho tôi",
+        //         "payload": "CONSULT_" + element.code,
+        //     },
+        // ];
         elementsData.push(newObj);
     });
     let response = {};
