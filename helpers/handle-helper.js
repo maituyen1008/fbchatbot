@@ -196,7 +196,7 @@ async function getProductByName (sender_psid, name = null) {
     products.result && products.result.products.length > 0 && products.result.products.forEach(element => {
         var newObj = {};
         newObj.title = element.title;
-        newObj.image_url = getImageCdn(element.image_url, 340, 177);
+        newObj.image_url = getImageCdn(element.image_url, 800, 800);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
         newObj.default_action = {
             "type": "web_url",
