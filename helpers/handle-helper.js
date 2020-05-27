@@ -193,7 +193,7 @@ async function getProductByName (sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
     var products = await getProductAPI(name);
     var elementsData = [];
-    products.result.forEach(element => {
+    products.result.length > 0 && products.result.forEach(element => {
         var newObj = {};
         newObj.title = element.title;
         newObj.image_url = getImageCdn('https://chiaki.vn/upload/' +element.image_url, 340, 177);
