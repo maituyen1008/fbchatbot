@@ -265,7 +265,7 @@ async function getProductAPI(name) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "https://api.chiaki.vn/api/search/" + name + "?page_id=0&page_size=10",
+            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=10",
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
