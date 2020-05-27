@@ -220,7 +220,7 @@ async function getProductByName (sender_psid, name = null) {
     });
 
     let response = {};
-    if (products.result.length == 0) {
+    if (products.result && products.result.products.length == 0) {
         response = {
             "text": `Không có sản phẩm cần tìm. Quý khách vui lòng tìm sp khác`
         }
@@ -230,8 +230,9 @@ async function getProductByName (sender_psid, name = null) {
                 "type": "template",
                 "payload": {
                     "template_type": "generic",
-                    "elements": elementsData,
                     "image_aspect_ratio": 'square',
+                    "sharable": true,
+                    "elements": elementsData,     
                 }
             }
         }
