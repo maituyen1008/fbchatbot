@@ -193,33 +193,31 @@ async function getProductByName (sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
     var products = await getProductAPI(name);
     var elementsData = [];
-    console.log(products.result.length > 0)
-    console.log('products.result', products.result)
-    products.result.length > 0 && products.result.forEach(element => {
+    products.result && products.result.products.length > 0 && products.result.products.forEach(element => {
         var newObj = {};
         newObj.title = element.title;
         newObj.image_url = getImageCdn('https://chiaki.vn/upload/' +element.image_url, 340, 177);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
-        // newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
-        // newObj.subtitle = "Xuất sứ: " + element.manufacturer;
-        // newObj.default_action = {
-        //     "type": "web_url",
-        //     "url": "https://chiaki.vn/" + element.slug,
-        //     "webview_height_ratio": "tall",
-        // };
-        // newObj.buttons = [
-        //     {
-        //         "type":"web_url",
-        //         "url":"https://chiaki.vn/" + element.slug,
-        //         "title":"Đặt hàng ngay",
-        //         "webview_height_ratio": "full"
-        //     },
-        //     {
-        //         "type": "postback",
-        //         "title": "Gọi tư vấn cho tôi",
-        //         "payload": "CONSULT_" + element.code,
-        //     },
-        // ];
+        newObj.subtitle = "Tình trạng: "  + element.inventory > 0 ? "còn hàng" : "tạm hết hàng";
+        newObj.subtitle = "Xuất sứ: " + element.manufacturer;
+        newObj.default_action = {
+            "type": "web_url",
+            "url": "https://chiaki.vn/" + element.slug,
+            "webview_height_ratio": "tall",
+        };
+        newObj.buttons = [
+            {
+                "type":"web_url",
+                "url":"https://chiaki.vn/" + element.slug,
+                "title":"Đặt hàng ngay",
+                "webview_height_ratio": "full"
+            },
+            {
+                "type": "postback",
+                "title": "Gọi tư vấn cho tôi",
+                "payload": "CONSULT_" + element.code,
+            },
+        ];
         elementsData.push(newObj);
     });
     console.log('elementsData' , elementsData)
@@ -293,7 +291,7 @@ async function searchOrder (sender_psid) {
 async function checkSearchOrderPhone(sender_psid, message) {
     if (isValidPhone(message)) {
         user.sender_psid = 'search_order_code';
-        user.phone = message;
+        global.phone.push({sender_psid : message});
         await callSendAPI(sender_psid, {
             "text": `Quý khách vui lòng nhập mã đơn hàng!`
         });
