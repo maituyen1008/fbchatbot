@@ -193,6 +193,7 @@ async function getProductByName (sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
     var products = await getProductAPI(name);
     var elementsData = [];
+    console.log(products.result)
     products.result.length > 0 && products.result.forEach(element => {
         var newObj = {};
         newObj.title = element.title;
