@@ -13,6 +13,7 @@ function handleMessage(sender_psid, received_message) {
 
     // Check if the message contains text
     if (received_message.text) {
+        console.log('handleMessage', user.sender_psid)
         if(received_message.text.toLowerCase() == 'bắt đầu') {
             greeting(sender_psid);
         } else if (user.sender_psid == 'search') {
