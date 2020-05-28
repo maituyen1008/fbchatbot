@@ -11,11 +11,11 @@ function handleMessage(sender_psid, received_message) {
     if (user.sender_psid == null) {
         user.sender_psid = 'chatting';
     }
+    console.log(user);
     let response;
 
     // Check if the message contains text
     if (received_message.text) {
-        console.log('handleMessage', user.sender_psid)
         if(received_message.text.toLowerCase() == 'bắt đầu') {
             greeting(sender_psid);
         } else if (user.sender_psid == 'search') {
@@ -38,7 +38,6 @@ function handleMessage(sender_psid, received_message) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, postback) {
-    console.log('handlePostback')
     if (postback.payload.includes('CONSULT')) {
 
         if(postback.payload == 'CONSULT') {
