@@ -18,13 +18,13 @@ function handleMessage(sender_psid, received_message) {
     if (received_message.text) {
         if(received_message.text.toLowerCase() == 'bắt đầu') {
             greeting(sender_psid);
-        } else if (user.sender_psid == 'search') {
+        } else if (user[sender_psid] == 'search') {
             getProductByName(sender_psid, received_message.text);
-        } else if (user.sender_psid == 'consult') {
+        } else if (user[sender_psid] == 'consult') {
             checkPhone(sender_psid, received_message.text);
-        } else if (user.sender_psid == 'search_order_phone'){
+        } else if (user[sender_psid] == 'search_order_phone'){
             checkSearchOrderPhone(sender_psid, received_message.text);
-        } else if (user.sender_psid == 'search_order_code'){
+        } else if (user[sender_psid] == 'search_order_code'){
             searchOrderInfo(sender_psid, received_message.text);
         } else if(received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
@@ -279,8 +279,7 @@ async function getProductAPI(name) {
 }
 
 async function searchOrder (sender_psid) {
-    user.sender_psid = 'search_order_phone';
-    console.log('searchOrder')
+    user[sender_psid] = 'search_order_phone';
     await callSendAPI(sender_psid, {
         "text": `Quý khách vui lòng nhập số điện thoại đặt hàng!`
     });
