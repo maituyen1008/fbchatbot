@@ -11,7 +11,7 @@ function handleMessage(sender_psid, received_message) {
     if (user[sender_psid] == null) {
         user[sender_psid] = 'chatting';
     }
-    console.log(user);
+    console.log('handleMessage', user);
     let response;
 
     // Check if the message contains text
