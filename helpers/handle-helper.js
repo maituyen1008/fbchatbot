@@ -253,7 +253,8 @@ async function reSubmitPhone (sender_psid) {
 }
 
 async function searchProduct (sender_psid) {
-    user.sender_psid = 'search';
+    global.user.sender_psid = 'search';
+    console.log('searchProduct', user.sender_psid)
     await callSendAPI(sender_psid, {
         "text": `Quý khách vui lòng nhập tên sản phẩm!`
     });
