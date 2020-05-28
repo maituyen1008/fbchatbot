@@ -236,11 +236,11 @@ async function getProductByName (sender_psid, name = null) {
         }
     }
     await callSendAPI(sender_psid, response);
-    user.sender_psid = 'chatting';
+    user[sender_psid] = 'chatting';
 }
 
 async function thanks (sender_psid, phone) {
-    user.sender_psid == 'chatting';
+    user[sender_psid] == 'chatting';
     let fullName = await getFacebookName(sender_psid);
     // db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
     await callSendAPI(sender_psid, {
@@ -287,7 +287,7 @@ async function searchOrder (sender_psid) {
 
 async function checkSearchOrderPhone(sender_psid, message) {
     if (isValidPhone(message)) {
-        user.sender_psid = 'search_order_code';
+        user[sender_psid] = 'search_order_code';
         global.phone.push({sender_psid : message});
         await callSendAPI(sender_psid, {
             "text": `Quý khách vui lòng nhập mã đơn hàng!`
@@ -340,7 +340,7 @@ async function consult(sender_psid, productCode = '') {
     await callSendAPI(sender_psid, {
         "text": `Quý khách vui lòng điền số điện thoại để được hỗ trợ tư vấn sản phẩm: ` + productCode,
     });
-    global.user.sender_psid = 'consult';
+    user[sender_psid] = 'consult';
 
     // check số điện thoại
     /* db.query("SELECT * FROM `contact` where `psid` = '" + sender_psid + "';", async function (err, rows, fields) {
