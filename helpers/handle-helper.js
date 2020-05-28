@@ -8,7 +8,7 @@ const PAGE_SIZE = 5;
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
-    if (user.sender_psid == null) {
+    if (user[sender_psid] == null) {
         user[sender_psid] = 'chatting';
     }
     console.log(user);
