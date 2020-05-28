@@ -288,7 +288,7 @@ async function searchOrder (sender_psid) {
 async function checkSearchOrderPhone(sender_psid, message) {
     if (isValidPhone(message)) {
         user[sender_psid] = 'search_order_code';
-        global.phone.push({sender_psid : message});
+        phone[sender_psid] = message;
         await callSendAPI(sender_psid, {
             "text": `Quý khách vui lòng nhập mã đơn hàng!`
         });
@@ -298,7 +298,8 @@ async function checkSearchOrderPhone(sender_psid, message) {
 }
 
 async function searchOrderInfo(sender_psid, message) {
-    var order = await getOrderInfo(global.phone.sender_psid, message)
+    var order = await getOrderInfo(phone[sender_psid], message);
+    console.log(order)
 }
 
 async function getOrderInfo(phone, orderCode) {
@@ -349,12 +350,12 @@ async function consult(sender_psid, productCode = '') {
             await callSendAPI(sender_psid, {
                 "text": `Quý khách vui lòng điền số điện thoại để được hỗ trợ tư vấn sản phẩm: ` + productCode,
             });
-            global.user.sender_psid = 'consult';
+            user[sender_psid] = 'consult';
         } else {
             await callSendAPI(sender_psid, {
                 "text": `Chúng tôi sẽ sớm hỗ trợ tư vấn sản phẩm: ` + productCode,
             });
-            global.user.sender_psid = 'chatting';
+            user[sender_psid] = 'chatting';
         }
     }) */
 
