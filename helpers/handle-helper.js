@@ -8,7 +8,9 @@ const PAGE_SIZE = 5;
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
-
+    if (user.sender_psid == null) {
+        user.sender_psid = 'chatting';
+    }
     let response;
 
     // Check if the message contains text
