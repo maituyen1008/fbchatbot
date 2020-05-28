@@ -298,8 +298,32 @@ async function checkSearchOrderPhone(sender_psid, message) {
 }
 
 async function searchOrderInfo(sender_psid, message) {
-    var order = await getOrderInfo(phone[sender_psid], message);
-    console.log(order)
+    var response = await getOrderInfo(phone[sender_psid], message);
+    var message = `Có lỗi xảy ra. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng!`;
+    if (response.status == 'successful' && response.result.order) {
+        var order = response.result.order;
+        switch (order.status.code) {
+            case 'pending':
+                message = `Đơn hàng của bạn đang được chờ xác nhận.`;
+                break;
+            case 'confirmed':
+                message = `Đơn hàng của bạn đã được xác nhận và sẽ được giao cho bên vận chuyển sớm nhất.`;
+                break;
+            case 'success':
+                message = `Đơn hàng của bạn đã được giao thành công.`;
+                break;
+            case 'delivering':
+                message = `Đơn hàng của bạn đã được giao cho ` + order.shipper_full_name + (order.shipper_code && order.shipper_code != null ? `, mã giao vận là ` + order.shipper_code : ``);
+                break;
+            case 'cancel':
+                message = `Đơn hàng của bạn đã bị hủy.`;
+                break;
+            default:
+                break;
+        }
+    }
+    await callSendAPI(sender_psid, {"text": message});
+    user[sender_psid] = 'chatting';
 }
 
 async function getOrderInfo(phone, orderCode) {
