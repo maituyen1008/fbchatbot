@@ -4,6 +4,8 @@ const fetch = require('node-fetch');
 
 const PAGE_ACCESS_TOKEN =  process.env.PAGE_ACCESS_TOKEN;
 const SECURITY_TOKEN = process.env.SECURITY_TOKEN;
+const PAGE_SIZE = 5;
+
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
 
@@ -33,6 +35,7 @@ function handleMessage(sender_psid, received_message) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, postback) {
+    console.log('handlePostback')
     if (postback.payload.includes('CONSULT')) {
 
         if(postback.payload == 'CONSULT') {
@@ -51,18 +54,12 @@ function handlePostback(sender_psid, postback) {
         case 'SEARCH_PRODUCT':
             searchProduct(sender_psid);
             break;
-        case 'SEARCH_ORDER':
+        case 'TRACKING_ORDER':
             searchOrder(sender_psid);
             break;
         case 'CONTACT':
             contact(sender_psid);
             break;
-        // case 'DELIVERY_POLICY':
-        //     deliveryPolicy(sender_psid);
-        //     break;
-        // case 'PAYMENT_METHODS':
-        //     paymentMethods(sender_psid);
-        //     break;
         default:
     }
 }
@@ -222,7 +219,7 @@ async function getProductByName (sender_psid, name = null) {
     let response = {};
     if (products.result && products.result.products.length == 0) {
         response = {
-            "text": `Không có sản phẩm cần tìm. Quý khách vui lòng tìm sp khác`
+            "text": `Không có sản phẩm cần tìm. Quý khách vui lòng tìm sản phẩm khác`
         }
     } else {
         response = {
@@ -267,7 +264,7 @@ async function getProductAPI(name) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=5",
+            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=" + PAGE_SIZE,
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
@@ -281,6 +278,7 @@ async function getProductAPI(name) {
 
 async function searchOrder (sender_psid) {
     user.sender_psid = 'search_order_phone';
+    console.log('searchOrder')
     await callSendAPI(sender_psid, {
         "text": `Quý khách vui lòng nhập số điện thoại đặt hàng!`
     });
@@ -296,6 +294,10 @@ async function checkSearchOrderPhone(sender_psid, message) {
     } else {
         reSubmitPhone(sender_psid);
     }
+}
+
+async function searchOrderInfo(sender_psid, message) {
+    var order = await getOrderInfo(global.phone.sender_psid, message)
 }
 
 async function getOrderInfo(phone, orderCode) {
