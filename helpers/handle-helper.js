@@ -65,7 +65,7 @@ function handlePostback(sender_psid, postback) {
     }
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         console.log('postback.payload', postback.payload);
-        var arr = postback.payload.slit("_");
+        var arr = postback.payload.split("_");
         console.log('arr', arr[arr.length -1]);
         detailProduct(sender_psid, arr[arr.length -1]);
     } else {
