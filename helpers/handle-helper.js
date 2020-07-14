@@ -63,8 +63,7 @@ function handlePostback(sender_psid, postback) {
         user[sender_psid] = {};
         user[sender_psid].action = 'chatting';
     }
-    detailProduct(sender_psid, 8075);
-    return
+
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.split("_");
         detailProduct(sender_psid, arr[arr.length -1]);
@@ -558,7 +557,7 @@ async function detailProduct(sender_psid, id) {
         {
             "title": product.title,
             "image_url": getImageCdn(product.image_url, 800, 800),
-            "subtitle": product.description + "\nXuất xứ: " + 
+            "subtitle": product.name + "\nXuất xứ: " + 
                 product.product_origin + 
                 (product.expried_date != null ? "\nHạn sử dụng: " + product.expried_date: '')  + 
                 "\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng"),
