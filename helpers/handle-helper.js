@@ -306,7 +306,6 @@ async function getProductByName(sender_psid, name = null) {
             "type": "web_url",
             "url": "https://chiaki.vn/" + element.slug,
             "webview_height_ratio": "tall",
-            // "payload": "DETAIL_PRODUCT_" + element.id,
         };
         newObj.buttons = [
             /* {
@@ -552,11 +551,15 @@ async function notification (sender_psid, message) {
 
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
+    product = product.result;
     var elementsData = [
         {
-            "title":"<TITLE_TEXT>",
-            "image_url":"<IMAGE_URL_TO_DISPLAY>",
-            "subtitle":"<SUBTITLE_TEXT>",
+            "title": product.title,
+            "image_url": getImageCdn(product.image_url, 800, 800),
+            "subtitle": product.title + "\n\nXuất xứ: " + 
+                product.product_origin + 
+                (product.expried_date != null ? "\n\nHạn sử dụng: " + product.expried_date: '')  + 
+                "\n\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng"),
             "default_action": {
                 "type": "web_url",
                 "url": "https://chiaki.vn/" + product.slug,
