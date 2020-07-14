@@ -594,8 +594,25 @@ async function detailProduct(sender_psid, id) {
     //         }
     //     }
     // }
-    await callSendAPI(sender_psid, message);
-    greeting(sender_psid);
+    await callSendAPI(sender_psid, {"text": message});
+    let response = {
+        "text": "Mình có thể giúp gì cho bạn?",
+        "quick_replies": [
+            {
+                "content_type": "text",
+                "title": "Tìm sản phẩm khác",
+                "payload": "SEARCH_PRODUCT",
+                "image_url": "https://s4.shopbay.vn/files/269/51khmhzghul-5ed06bae48853.png"
+            },
+            {
+                "content_type": "text",
+                "title": "Đặt hàng",
+                "payload": "ORDER",
+                "image_url": "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png"
+            },
+        ]
+    }
+    await callSendAPI(sender_psid, response);
     user[sender_psid].action = 'chatting';
 }
 
