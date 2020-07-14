@@ -33,7 +33,8 @@ function handleMessage(sender_psid, received_message) {
 
         } else if (user[sender_psid].action == 'search_order_code') {
             searchOrderInfo(sender_psid, received_message.text);
-
+        } else if (user[sender_psid].action == 'notification_phone') {
+            notification(sender_psid, received_message.text)
         } else if (received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
             handlePostback(sender_psid, received_message.quick_reply);
@@ -58,41 +59,50 @@ function handlePostback(sender_psid, postback) {
         }
 
     } */
-    switch (postback.payload) {
-        case 'GET_STARTED':
-            greeting(sender_psid);
-            break;
-        case 'SEARCH_PRODUCT':
-            searchProduct(sender_psid);
-            break;
-        case 'TRACKING_ORDER':
-            searchOrder(sender_psid);
-            break;
-        case 'ORDER':
-            order(sender_psid);
-            break;
-        case 'CONSULT':
-            consult(sender_psid);
-            break;
-        case 'PHONE_NUMBER':
-            callSendAPI(sender_psid, {
-                "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
-            });
-            break;
-        default:
-
-        /*
-        case 'CONTACT':
-            contact(sender_psid);
-            break;
-        case 'DELIVERY_POLICY':
-            deliveryPolicy(sender_psid);
-            break;
-        case 'PAYMENT_METHODS':
-            paymentMethods(sender_psid);
-            break;
-        */
+    if (postback.payload.includes("DETAIL_PRODUCT")) {
+        var arr = postback.payload.slit("_");
+        detailProduct(sender_psid, arr[arr.length -1]);
+    } else {
+        switch (postback.payload) {
+            case 'GET_STARTED':
+                greeting(sender_psid);
+                break;
+            case 'SEARCH_PRODUCT':
+                searchProduct(sender_psid);
+                break;
+            case 'TRACKING_ORDER':
+                searchOrder(sender_psid);
+                break;
+            case 'ORDER':
+                order(sender_psid);
+                break;
+            case 'NOTIFICATION':
+                notificationPhone(sender_psid);
+                break;
+            case 'CONSULT':
+                consult(sender_psid);
+                break;
+            case 'PHONE_NUMBER':
+                callSendAPI(sender_psid, {
+                    "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
+                });
+                break;
+            default:
+    
+            /*
+            case 'CONTACT':
+                contact(sender_psid);
+                break;
+            case 'DELIVERY_POLICY':
+                deliveryPolicy(sender_psid);
+                break;
+            case 'PAYMENT_METHODS':
+                paymentMethods(sender_psid);
+                break;
+            */
+        }
     }
+   
 }
 
 async function order(sender_psid) {
@@ -288,9 +298,10 @@ async function getProductByName(sender_psid, name = null) {
         newObj.image_url = getImageCdn(element.image_url, 800, 800);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
         newObj.default_action = {
-            "type": "web_url",
-            "url": "https://chiaki.vn/" + element.slug,
-            "webview_height_ratio": "tall",
+            "type": "postback",
+            // "url": "https://chiaki.vn/" + element.slug,
+            // "webview_height_ratio": "tall",
+            "payload": "DETAIL_PRODUCT_" + element.id,
         };
         newObj.buttons = [
             /* {
@@ -301,8 +312,13 @@ async function getProductByName(sender_psid, name = null) {
             } */
             {
                 "type": "postback",
-                "title": "Đặt hàng",
-                "payload": "ORDER",
+                "title": element.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng" ,
+                "payload": element.inventory > 0 ? "ORDER" : "NOTIFICATION",
+            },
+            {
+                "type": "postback",
+                "title": "Chi tiết",
+                "payload": "DETAIL_PRODUCT_" + element.id,
             },
         ];
         elementsData.push(newObj);
@@ -509,6 +525,82 @@ async function consult(sender_psid) {
     global.user[sender_psid].action = 'consult';
     toogleBot(sender_psid, false);
 
+}
+
+async function notificationPhone(sender_psid) {
+    global.user[sender_psid].action = 'notification_phone';
+    await callSendAPI(sender_psid, {
+        "text": `Quý khách vui lòng để lại số điện thoại để chúng tôi.`
+    });
+}
+
+async function notification (sender_psid, message) {
+    if (isValidPhone(message)) {
+        user[sender_psid].action = 'chatting';
+        await callSendAPI(sender_psid, {
+            "text": `Cảm ơn quý khách đã quan tâm. Chúng tôi sẽ liên hệ với quý khách ngay khi có hàng.`
+        });
+    } else {
+        reSubmitPhone(sender_psid);
+    }
+}
+
+async function detailProduct(sender_psid, id) {
+    var product = await getProductById(id);
+    var elementsData = [
+        {
+            "title":"<TITLE_TEXT>",
+            "image_url":"<IMAGE_URL_TO_DISPLAY>",
+            "subtitle":"<SUBTITLE_TEXT>",
+            "default_action": {
+                "type": "web_url",
+                "url": "https://chiaki.vn/" + product.slug,
+                "webview_height_ratio": "tall",
+            },
+            "buttons": [
+                {
+                    "type": "postback",
+                    "title": product.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng" ,
+                    "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                },
+                {
+                    "type": "web_url",
+                    "title": "Xem trên Web",
+                    "url": "https://chiaki.vn/" + product.slug,
+                },
+            ]   
+       },
+    ];
+    response = {
+        "attachment": {
+            "type": "template",
+            "payload": {
+                "template_type": "generic",
+                "image_aspect_ratio": "square",
+                "elements": elementsData,
+            }
+        }
+    }
+    await callSendAPI(sender_psid, response);
+    user[sender_psid].action = 'chatting';
+}
+
+function getProductById(id) {
+    return new Promise(function (resolve, reject) {
+        request({
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            uri: "https://api.chiaki.vn/api/" + id,
+            method: 'GET'
+        }, (err, res, body) => {
+            if (!err) {
+                resolve(JSON.parse(body));
+            } else {
+                reject(err);
+            }
+        });
+    });
 }
 
 function toogleBot(sender_psid, status = null) {
