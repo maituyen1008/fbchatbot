@@ -552,48 +552,9 @@ async function notification (sender_psid, message) {
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
     product = product.result;
-    var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}
-                , nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}.
-                \n${product.description}
-                \nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}`;
-    // var elementsData = [
-    //     {
-    //         "title": product.title,
-    //         "image_url": getImageCdn(product.image_url, 800, 800),
-    //         "subtitle": product.name + "\nXuất xứ: " + 
-    //             product.product_origin + 
-    //             (product.expried_date != null ? "\nHạn sử dụng: " + product.expried_date: '') + 
-    //             "\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng") +
-    //             "\nHãng sản xuất: " + product.manufacture,
-    //         "default_action": {
-    //             "type": "web_url",
-    //             "url": "https://chiaki.vn/" + product.slug,
-    //             "webview_height_ratio": "full",
-    //         },
-    //         "buttons": [
-    //             {
-    //                 "type": "postback",
-    //                 "title": product.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng" ,
-    //                 "payload":  "NOTIFICATION",
-    //             },
-    //             {
-    //                 "type": "web_url",
-    //                 "title": "Xem trên website",
-    //                 "url": "https://chiaki.vn/" + product.slug,
-    //             },
-    //         ]   
-    //    },
-    // ];
-    // response = {
-    //     "attachment": {
-    //         "type": "template",
-    //         "payload": {
-    //             "template_type": "generic",
-    //             "image_aspect_ratio": "square",
-    //             "elements": elementsData,
-    //         }
-    //     }
-    // }
+    var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}.
+                ${product.description}
+                Sản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}`;
     await callSendAPI(sender_psid, {"text": message});
     let response = {
         "text": "Mình có thể giúp gì cho bạn?",
