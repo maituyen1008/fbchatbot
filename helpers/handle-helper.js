@@ -64,9 +64,7 @@ function handlePostback(sender_psid, postback) {
         user[sender_psid].action = 'chatting';
     }
     if (postback.payload.includes("DETAIL_PRODUCT")) {
-        console.log('postback.payload', postback.payload);
         var arr = postback.payload.split("_");
-        console.log('arr', arr[arr.length -1]);
         detailProduct(sender_psid, arr[arr.length -1]);
     } else {
         switch (postback.payload) {
@@ -552,6 +550,7 @@ async function notification (sender_psid, message) {
 
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
+    console.log(product)
     product = product.result;
     console.log('product', product)
 
