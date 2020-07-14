@@ -63,6 +63,8 @@ function handlePostback(sender_psid, postback) {
         user[sender_psid] = {};
         user[sender_psid].action = 'chatting';
     }
+    detailProduct(sender_psid, 8075);
+    return
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.split("_");
         detailProduct(sender_psid, arr[arr.length -1]);
@@ -556,14 +558,14 @@ async function detailProduct(sender_psid, id) {
         {
             "title": product.title,
             "image_url": getImageCdn(product.image_url, 800, 800),
-            "subtitle": product.title + "\n\nXuất xứ: " + 
+            "subtitle": product.title + "\nXuất xứ: " + 
                 product.product_origin + 
-                (product.expried_date != null ? "\n\nHạn sử dụng: " + product.expried_date: '')  + 
-                "\n\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng"),
+                (product.expried_date != null ? "\nHạn sử dụng: " + product.expried_date: '')  + 
+                "\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng"),
             "default_action": {
                 "type": "web_url",
                 "url": "https://chiaki.vn/" + product.slug,
-                "webview_height_ratio": "tall",
+                "webview_height_ratio": "full",
             },
             "buttons": [
                 {
