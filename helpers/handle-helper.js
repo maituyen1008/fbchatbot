@@ -550,9 +550,7 @@ async function notification (sender_psid, message) {
 
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
-    console.log(product)
     product = product.result;
-    console.log('product', product)
 
     var elementsData = [
         {
@@ -601,7 +599,7 @@ function getProductById(id) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "https://api.chiaki.vn/api/" + id,
+            uri: "https://api.chiaki.vn/api/product" + id,
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
