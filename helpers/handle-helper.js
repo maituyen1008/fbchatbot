@@ -558,7 +558,7 @@ async function detailProduct(sender_psid, id) {
         {
             "title": product.title,
             "image_url": getImageCdn(product.image_url, 800, 800),
-            "subtitle": product.title + "\nXuất xứ: " + 
+            "subtitle": product.description + "\nXuất xứ: " + 
                 product.product_origin + 
                 (product.expried_date != null ? "\nHạn sử dụng: " + product.expried_date: '')  + 
                 "\nTình trạng: " + (product.inventory > 0 ? "Còn hàng" : "Hết hàng"),
@@ -571,11 +571,11 @@ async function detailProduct(sender_psid, id) {
                 {
                     "type": "postback",
                     "title": product.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng" ,
-                    "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                    "payload":  "NOTIFICATION",
                 },
                 {
                     "type": "web_url",
-                    "title": "Xem trên Web",
+                    "title": "Xem trên website",
                     "url": "https://chiaki.vn/" + product.slug,
                 },
             ]   
