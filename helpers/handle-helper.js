@@ -37,6 +37,7 @@ function handleMessage(sender_psid, received_message) {
             notification(sender_psid, received_message.text)
         } else if (received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
+            console.log('user', user)
             handlePostback(sender_psid, received_message.quick_reply);
 
         }
