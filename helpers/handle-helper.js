@@ -63,9 +63,10 @@ function handlePostback(sender_psid, postback) {
         user[sender_psid] = {};
         user[sender_psid].action = 'chatting';
     }
-
+    console.log('postback' , postback )
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.slit("_");
+        console.log(arr[arr.length -1]);
         detailProduct(sender_psid, arr[arr.length -1]);
     } else {
         switch (postback.payload) {
