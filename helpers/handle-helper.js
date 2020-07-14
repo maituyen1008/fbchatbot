@@ -16,6 +16,7 @@ function handleMessage(sender_psid, received_message) {
     /*  else if (user[sender_psid].action == 'consult') {
             checkPhone(sender_psid, received_message.text);
         } */
+    console.log('user', user)
 
     if (received_message.text) {
 
