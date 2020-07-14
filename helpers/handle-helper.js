@@ -552,6 +552,8 @@ async function notification (sender_psid, message) {
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
     product = product.result;
+    console.log('product', product)
+
     var elementsData = [
         {
             "title": product.title,
