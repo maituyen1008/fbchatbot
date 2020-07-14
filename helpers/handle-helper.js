@@ -343,9 +343,9 @@ async function getProductByName(sender_psid, name = null) {
                 }
             }
         }
+        user[sender_psid].action = 'chatting';
     }
     await callSendAPI(sender_psid, response);
-    user[sender_psid].action = 'chatting';
 }
 
 /* async function thanks(sender_psid, phone) {
@@ -599,7 +599,7 @@ function getProductById(id) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "https://api.chiaki.vn/api/product" + id,
+            uri: "https://api.chiaki.vn/api/product/" + id,
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
