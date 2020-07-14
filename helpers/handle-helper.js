@@ -303,10 +303,10 @@ async function getProductByName(sender_psid, name = null) {
         newObj.image_url = getImageCdn(element.image_url, 800, 800);
         newObj.subtitle = "Giá: " + moneyToString(element.sale_price) + " ₫";
         newObj.default_action = {
-            "type": "postback",
-            // "url": "https://chiaki.vn/" + element.slug,
-            // "webview_height_ratio": "tall",
-            "payload": "DETAIL_PRODUCT_" + element.id,
+            "type": "web_url",
+            "url": "https://chiaki.vn/" + element.slug,
+            "webview_height_ratio": "tall",
+            // "payload": "DETAIL_PRODUCT_" + element.id,
         };
         newObj.buttons = [
             /* {
