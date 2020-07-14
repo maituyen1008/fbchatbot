@@ -2,53 +2,62 @@ const request = require('request');
 const fetch = require('node-fetch');
 // var db = require('./db-helper');
 
-const PAGE_ACCESS_TOKEN =  process.env.PAGE_ACCESS_TOKEN;
-const SECURITY_TOKEN = process.env.SECURITY_TOKEN;
+const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const PAGE_SIZE = 5;
+const GREETING_TEXT = ['bắt đầu', 'hi', 'xin chào', 'chào', 'alo', '.'];
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
     if (user[sender_psid] == null) {
-        user[sender_psid] = 'chatting';
+        user[sender_psid] = {};
+        user[sender_psid].action = 'chatting';
     }
-    console.log('handleMessage', user);
-    let response;
 
-    // Check if the message contains text
-    if (received_message.text) {
-        if(received_message.text.toLowerCase() == 'bắt đầu') {
-            greeting(sender_psid);
-        } else if (user[sender_psid] == 'search') {
-            getProductByName(sender_psid, received_message.text);
-        } else if (user[sender_psid] == 'consult') {
+    /*  else if (user[sender_psid].action == 'consult') {
             checkPhone(sender_psid, received_message.text);
-        } else if (user[sender_psid] == 'search_order_phone'){
+        } */
+
+    if (received_message.text) {
+
+        if(user[sender_psid].inprocess && ['getting_name', 'getting_address', 'getting_phone'].includes(user[sender_psid].inprocess)) {
+            order(sender_psid);
+
+        } else if (GREETING_TEXT.includes(received_message.text.toLowerCase())) {
+            greeting(sender_psid);
+
+        } else if (user[sender_psid].action == 'search') {
+            getProductByName(sender_psid, received_message.text);
+
+        } else if (user[sender_psid].action == 'search_order_phone') {
             checkSearchOrderPhone(sender_psid, received_message.text);
-        } else if (user[sender_psid] == 'search_order_code'){
+
+        } else if (user[sender_psid].action == 'search_order_code') {
             searchOrderInfo(sender_psid, received_message.text);
-        } else if(received_message.quick_reply && received_message.quick_reply.payload) {
+
+        } else if (received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
             handlePostback(sender_psid, received_message.quick_reply);
-            
+
         }
     }
 
-    
+
 }
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, postback) {
-    if (postback.payload.includes('CONSULT')) {
+    /* if (postback.payload.includes('CONSULT')) {
 
-        if(postback.payload == 'CONSULT') {
+        if (postback.payload == 'CONSULT') {
             consult(sender_psid);
-        } else {
+        }
+         else { // không dùng cái này nữa
             var regex = /_(\w+)$/gm;
             var arr = regex.exec(postback.payload);
             consult(sender_psid, arr[1]);
         }
 
-    }
+    } */
     switch (postback.payload) {
         case 'GET_STARTED':
             greeting(sender_psid);
@@ -59,34 +68,100 @@ function handlePostback(sender_psid, postback) {
         case 'TRACKING_ORDER':
             searchOrder(sender_psid);
             break;
+        case 'ORDER':
+            order(sender_psid);
+            break;
+        case 'CONSULT':
+            consult(sender_psid);
+            break;
+        case 'PHONE_NUMBER':
+            callSendAPI(sender_psid, {
+                "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
+            });
+            break;
+        default:
+
+        /*
         case 'CONTACT':
             contact(sender_psid);
             break;
-        default:
+        case 'DELIVERY_POLICY':
+            deliveryPolicy(sender_psid);
+            break;
+        case 'PAYMENT_METHODS':
+            paymentMethods(sender_psid);
+            break;
+        */
     }
+}
+
+async function order(sender_psid) {
+    if (!global.user[sender_psid])
+        global.user[sender_psid] = {};
+
+    if(!global.user[sender_psid].inprocess) {
+        // tạo trạng thái đang thu thập thông tin order
+        global.user[sender_psid].inprocess = 'getting_name';
+        await callSendAPI(sender_psid, {
+            "text": `Quý khách vui lòng để lại thông tin nhận hàng.`
+        });
+
+        // Hỏi tên
+        await callSendAPI(sender_psid, {
+            "text": `Họ và tên: `
+        });
+
+    } else if (global.user[sender_psid].inprocess == 'getting_name') {
+        global.user[sender_psid].inprocess = 'getting_address'
+        // Hỏi địa chỉ
+        await callSendAPI(sender_psid, {
+            "text": `Địa chỉ nhận hàng:`
+        });
+
+    } else if(global.user[sender_psid].inprocess == 'getting_address') {
+        global.user[sender_psid].inprocess = 'getting_phone';
+        // Hỏi số điện thoại
+        let response = {
+            "text": "Số điện thoại liên hệ:",
+            "quick_replies": [
+                {
+                    "content_type": "user_phone_number",
+                    "payload": "PHONE_NUMBER"
+                }
+            ]
+        }
+        await callSendAPI(sender_psid, response);
+    } else if (global.user[sender_psid].inprocess == 'getting_phone') {
+        delete global.user[sender_psid].inprocess;
+
+        callSendAPI(sender_psid, {
+            "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
+        });
+    }
+
 }
 
 function postQuickReplies(sender_psid) {
     let response = {
         "text": "Mình có thể giúp gì cho bạn?",
-        "quick_replies":[
+        "quick_replies": [
             {
-                "content_type":"text",
-                "title":"Tìm Kiếm sản phẩm",
-                "payload":"SEARCH_PRODUCT",
-                "image_url":"https://images-eu.ssl-images-amazon.com/images/I/51KHmHZGHUL.png"
+                "content_type": "text",
+                "title": "Đặt hàng",
+                "payload": "SEARCH_PRODUCT",
+                "image_url": "https://s4.shopbay.vn/files/269/51khmhzghul-5ed06bae48853.png"
             },
             {
-                "content_type":"text",
-                "title":"Tư vấn cho tôi",
-                "payload":"CONSULT",
-                "image_url":"https://www.mossreports.com/wp-content/uploads/consult-standard.png"
+                "content_type": "text",
+                "title": "Chat với tư vấn viên",
+                "payload": "CONSULT",
+                "image_url": "https://s4.shopbay.vn/files/269/consult-standard-5ed06bae47e78.png"
             },
             {
-                "content_type":"text",
-                "title":"Thông tin liên hệ",
-                "payload":"CONTACT",
-                "image_url":"https://cgomedia.com/wp-content/uploads/2019/11/contact-us.png"
+                "content_type": "text",
+                "title": "Tra cứu đơn hàng",
+                "payload": "CONTACT",
+                "image_url": "https://s4.shopbay.vn/files/269/box-5ed06c7a0f21b.png"
             }
         ]
     }
@@ -96,7 +171,7 @@ function postQuickReplies(sender_psid) {
 // Sends response messages via the Send API
 async function callSendAPI(sender_psid, response, typing = true) {
 
-    if(typing) {
+    if (typing) {
         setTypeStatus(sender_psid, true);
     }
 
@@ -115,7 +190,7 @@ async function callSendAPI(sender_psid, response, typing = true) {
             "json": request_body
         }, (err, res, body) => {
 
-            if(typing) {
+            if (typing) {
                 setTypeStatus(sender_psid, false);
             }
 
@@ -146,7 +221,7 @@ function setTypeStatus(sender_psid, isTyping = true) {
         "sender_action": "type_off"
     }
     let typeStatus = type_on;
-    if(!isTyping){
+    if (!isTyping) {
         typeStatus = type_off;
     }
 
@@ -159,14 +234,29 @@ function setTypeStatus(sender_psid, isTyping = true) {
 }
 
 async function greeting(sender_psid) {
+
+    if (global.user[sender_psid] && !global.user[sender_psid].status) {
+        // nếu user tồn tại và trạng thái đang tắt chatbot -> check hết hạn tắt chưa
+        let updateTime = global.user[sender_psid].updateTime;
+        if (updateTime) {
+            let dateExp = new Date();
+            dateExp.setDate(dateExp.getDate() + 1);
+            if (dateExp < updateTime.getDate()) { // hết hạn tắt => bật lại
+                global.user[sender_psid].status = true;
+                global.user[sender_psid].updateTime = new Date();
+            } else {
+                console.log('Đang tạm dừng chatbot với: ' + sender_psid);
+                return;
+            }
+        }
+
+    }
+
     let fullName = await getFacebookName(sender_psid);
     await callSendAPI(sender_psid, {
-        "text": `Chào mừng ${fullName} tới sàn thương mại điện điện tử lớn nhất Thế giới!`
+        "text": `Chào mừng bạn đến với Chiaki - Siêu thị trực tuyến hàng đầu Việt Nam`
     });
-    await callSendAPI(sender_psid, {
-        "text": `Hotline : 0981518218`
-    });
-    
+
     postQuickReplies(sender_psid);
 }
 
@@ -188,7 +278,7 @@ async function getFacebookName(sender_psid) {
     });
 }
 
-async function getProductByName (sender_psid, name = null) {
+async function getProductByName(sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
     var products = await getProductAPI(name);
     var elementsData = [];
@@ -203,16 +293,16 @@ async function getProductByName (sender_psid, name = null) {
             "webview_height_ratio": "tall",
         };
         newObj.buttons = [
-            {
-                "type":"web_url",
-                "url":"https://chiaki.vn/" + element.slug,
-                "title":"Đặt hàng ngay",
+            /* {
+                "type": "web_url",
+                "url": "https://chiaki.vn/" + element.slug,
+                "title": "Đặt hàng ngay",
                 "webview_height_ratio": "full"
-            },
+            } */
             {
                 "type": "postback",
-                "title": "Gọi tư vấn cho tôi",
-                "payload": "CONSULT_" + element.code,
+                "title": "Đặt hàng",
+                "payload": "ORDER",
             },
         ];
         elementsData.push(newObj);
@@ -230,38 +320,38 @@ async function getProductByName (sender_psid, name = null) {
                 "payload": {
                     "template_type": "generic",
                     "image_aspect_ratio": "square",
-                    "elements": elementsData,     
+                    "elements": elementsData,
                 }
             }
         }
     }
     await callSendAPI(sender_psid, response);
-    user[sender_psid] = 'chatting';
+    user[sender_psid].action = 'chatting';
 }
 
-async function thanks (sender_psid, phone) {
-    user[sender_psid] == 'chatting';
+/* async function thanks(sender_psid, phone) {
+    user[sender_psid].action == 'chatting';
     let fullName = await getFacebookName(sender_psid);
-    // db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
+    db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
     await callSendAPI(sender_psid, {
         "text": `Cảm ơn quý khách đã để lại thông tin liên hệ. Chúng tôi sẽ gọi điện cho quý khách trong thời gian sớm nhất. Trân trọng!`
     });
-}
-async function reSubmitPhone (sender_psid) {
+} */
+async function reSubmitPhone(sender_psid) {
     await callSendAPI(sender_psid, {
-        "text": `Số điện thoại không đúng định dạng. Vui lòng thử lại!`,
+        "text": `Số điện thoại không đúng định dạng. Vui lòng thử lại.`,
     });
 }
 
-async function searchProduct (sender_psid) {
-    user[sender_psid] = 'search';
+async function searchProduct(sender_psid) {
+    user[sender_psid].action = 'search';
     await callSendAPI(sender_psid, {
-        "text": `Quý khách vui lòng nhập tên sản phẩm!`
+        "text": `Quý khách vui lòng nhập tên sản phẩm.`
     });
 }
 
 async function getProductAPI(name) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         request({
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -278,19 +368,19 @@ async function getProductAPI(name) {
     });
 }
 
-async function searchOrder (sender_psid) {
-    user[sender_psid] = 'search_order_phone';
+async function searchOrder(sender_psid) {
+    user[sender_psid].action = 'search_order_phone';
     await callSendAPI(sender_psid, {
-        "text": `Quý khách vui lòng nhập số điện thoại đặt hàng!`
+        "text": `Quý khách vui lòng nhập số điện thoại đặt hàng.`
     });
 }
 
 async function checkSearchOrderPhone(sender_psid, message) {
     if (isValidPhone(message)) {
-        user[sender_psid] = 'search_order_code';
+        user[sender_psid].action = 'search_order_code';
         phone[sender_psid] = message;
         await callSendAPI(sender_psid, {
-            "text": `Quý khách vui lòng nhập mã đơn hàng!`
+            "text": `Quý khách vui lòng nhập mã đơn hàng.`
         });
     } else {
         reSubmitPhone(sender_psid);
@@ -299,9 +389,10 @@ async function checkSearchOrderPhone(sender_psid, message) {
 
 async function searchOrderInfo(sender_psid, message) {
     var response = await getOrderInfo(phone[sender_psid], message);
-    var message = `Có lỗi xảy ra. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng!`;
+    var message = `Có lỗi xảy ra. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng.`;
     if (response.status == 'successful' && response.result.order) {
-        var order = response.result.order;
+        let order = response.result.order;
+        let items = response.result.items;
         switch (order.status.code) {
             case 'pending':
                 message = `Đơn hàng của bạn đang được chờ xác nhận.`;
@@ -321,18 +412,65 @@ async function searchOrderInfo(sender_psid, message) {
             default:
                 break;
         }
+        let timestamp = order.sync_id.substr(0,10);
+        let elements = [];
+
+        for (var i = 0; i < items.length; i++) {
+            elements.push({
+                "title": items[i].name,
+                "subtitle": "",
+                "quantity": items[i].quantity,
+                "price": items[i].unit_price,
+                "currency": "VND",
+                "image_url": items[i].image_url
+            });
+        }
+
+        let object = {
+            "attachment": {
+                "type": "template",
+                "payload": {
+                    "template_type": "receipt",
+                    "recipient_name": order.related_user_name,
+                    "order_number": order.code,
+                    "currency": "VND",
+                    "payment_method": "COD",
+                    "order_url": "https://chiaki.vn/",
+                    "timestamp": timestamp,
+                    "address": {
+                        "street_1": order.delivery_address,
+                        "street_2": order.shipping.name,
+                        "city": order.status.status,
+                        "postal_code": "10000",
+                        "state": "HN",
+                        "country": "VI"
+                    },
+                    "summary": {
+                        "subtotal": order.amount_temporary,
+                        "shipping_cost": order.shipping_fee,
+                        "total_cost": order.amount
+                    },
+                    "elements": elements
+                }
+            }
+    
+         }
+
+        await callSendAPI(sender_psid, {text: message});
+        await callSendAPI(sender_psid, object);
+
     }
-    await callSendAPI(sender_psid, {"text": message});
-    user[sender_psid] = 'chatting';
+    
+    user[sender_psid].action = 'chatting';
 }
 
 async function getOrderInfo(phone, orderCode) {
-    var data = { 
+    var data = {
         "phone": phone,
         'orderCode': orderCode
     };
     var contentLength = data.length;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         request({
             headers: {
                 'Content-Length': contentLength,
@@ -360,32 +498,28 @@ async function contact(sender_psid) {
     }, false);
 }
 
-async function consult(sender_psid, productCode = '') {
+async function consult(sender_psid) {
 
     await callSendAPI(sender_psid, {
-        "text": `Quý khách vui lòng điền số điện thoại để được hỗ trợ tư vấn sản phẩm: ` + productCode,
+        "text": 'Cảm ơn bạn đã quan tâm! Nhân viên hỗ trợ sẽ liên hệ với bạn trong thời gian sớm nhất!' + ' (' + sender_psid + ')',
     });
-    user[sender_psid] = 'consult';
+    if (!global.user[sender_psid])
+        global.user[sender_psid] = {};
 
-    // check số điện thoại
-    /* db.query("SELECT * FROM `contact` where `psid` = '" + sender_psid + "';", async function (err, rows, fields) {
-        if (err) throw err
-        if(!rows.length){
-            await callSendAPI(sender_psid, {
-                "text": `Quý khách vui lòng điền số điện thoại để được hỗ trợ tư vấn sản phẩm: ` + productCode,
-            });
-            user[sender_psid] = 'consult';
-        } else {
-            await callSendAPI(sender_psid, {
-                "text": `Chúng tôi sẽ sớm hỗ trợ tư vấn sản phẩm: ` + productCode,
-            });
-            user[sender_psid] = 'chatting';
-        }
-    }) */
+    global.user[sender_psid].action = 'consult';
+    toogleBot(sender_psid, false);
 
 }
 
-function deliveryPolicy(sender_psid) {
+function toogleBot(sender_psid, status = null) {
+    if (status === null) status = !global.user[sender_psid].status;
+
+    global.user[sender_psid].status = status;
+    global.user[sender_psid].updateTime = new Date();
+
+}
+
+/* function deliveryPolicy(sender_psid) {
     setTypeStatus(sender_psid, true);
     // get delerery in database
     db.query("SELECT value FROM `option` where `key` = 'DELIVERY_POLICY';", function (err, rows, fields) {
@@ -395,9 +529,9 @@ function deliveryPolicy(sender_psid) {
         });
         setTypeStatus(sender_psid, false);
     })
-}
+} */
 
-function paymentMethods(sender_psid) {
+/* function paymentMethods(sender_psid) {
     // get delerery in database
     db.query("SELECT value FROM `option` where `key` = 'PAYMENT_METHODS';", function (err, rows, fields) {
         if (err) throw err
@@ -405,7 +539,7 @@ function paymentMethods(sender_psid) {
             "text": rows[0].value,
         });
     })
-}
+} */
 
 function getImageCdn($url, $width = 0, $height = 0, $fitIn = true, $webp = false) {
     $originUrl = $url;
@@ -485,5 +619,6 @@ standardizePhone = function (phone) {
 module.exports = {
     handleMessage,
     handlePostback,
-    callSendAPI
+    callSendAPI,
+    toogleBot
 }
