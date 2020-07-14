@@ -16,7 +16,6 @@ function handleMessage(sender_psid, received_message) {
     /*  else if (user[sender_psid].action == 'consult') {
             checkPhone(sender_psid, received_message.text);
         } */
-    console.log('user', user)
 
     if (received_message.text) {
 
@@ -38,7 +37,6 @@ function handleMessage(sender_psid, received_message) {
             notification(sender_psid, received_message.text)
         } else if (received_message.quick_reply && received_message.quick_reply.payload) {
             console.log(received_message.quick_reply.payload)
-            console.log('user', user)
             handlePostback(sender_psid, received_message.quick_reply);
 
         }
@@ -61,6 +59,11 @@ function handlePostback(sender_psid, postback) {
         }
 
     } */
+    if (user[sender_psid] == null) {
+        user[sender_psid] = {};
+        user[sender_psid].action = 'chatting';
+    }
+
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.slit("_");
         detailProduct(sender_psid, arr[arr.length -1]);
