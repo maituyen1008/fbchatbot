@@ -553,7 +553,7 @@ async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
     product = product.result;
     var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}₫.` + 
-                `\n${product.description}`
+                `\n${product.description}` +
                 `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}`;
     await callSendAPI(sender_psid, {"text": message});
     let response = {
