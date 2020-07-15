@@ -359,7 +359,7 @@ async function getProductByName(sender_psid, name = null) {
 } */
 async function reSubmitPhone(sender_psid) {
     await callSendAPI(sender_psid, {
-        "text": `Số điện thoại không đúng định dạng. Vui lòng thử lại.`,
+        "text": `Số điện thoại không đúng định dạng. Vui lòng nhập lại số điện thoại.`,
     });
 }
 
@@ -534,7 +534,7 @@ async function consult(sender_psid) {
 async function notificationPhone(sender_psid) {
     global.user[sender_psid].action = 'notification_phone';
     await callSendAPI(sender_psid, {
-        "text": `Quý khách vui lòng để lại số điện thoại để chúng tôi.`
+        "text": `Quý khách vui lòng để lại số điện thoại để chúng tôi có thể liên hệ khi có hàng.`
     });
 }
 
@@ -569,7 +569,7 @@ async function detailProduct(sender_psid, id) {
             {
                 "content_type": "text",
                 "title": product.inventory > 0 ? "Đặt hàng" : "Báo khi có hàng",
-                "payload": "NOTIFICATION",
+                "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
                 "image_url": product.inventory > 0 ? "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png" : "https://s4.shopbay.vn/files/1/call-5f0e658d1f55b.png"
             },
         ]
