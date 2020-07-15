@@ -554,7 +554,8 @@ async function detailProduct(sender_psid, id) {
     product = product.result;
     var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}₫.` + 
                 `\n${product.description}` +
-                `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}`;
+                `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}` + 
+                `${product.inventory > 0 && product.expired_date != null ? ('và có hạn sử dụng là ' + product.expired_date) : '' } `;
     await callSendAPI(sender_psid, {"text": message});
     let response = {
         "text": "Mình có thể giúp gì cho bạn?",
@@ -567,9 +568,9 @@ async function detailProduct(sender_psid, id) {
             },
             {
                 "content_type": "text",
-                "title": "Đặt hàng",
-                "payload": "ORDER",
-                "image_url": "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png"
+                "title": product.inventory > 0 ? "Đặt hàng" : "Báo khi có hàng",
+                "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                "image_url": product.inventory > 0 ? "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png" : "https://s4.shopbay.vn/files/1/call-5f0e658d1f55b.png"
             },
         ]
     }
