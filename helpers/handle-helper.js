@@ -569,7 +569,7 @@ async function detailProduct(sender_psid, id) {
             {
                 "content_type": "text",
                 "title": product.inventory > 0 ? "Đặt hàng" : "Báo khi có hàng",
-                "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                "payload": "NOTIFICATION",
                 "image_url": product.inventory > 0 ? "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png" : "https://s4.shopbay.vn/files/1/call-5f0e658d1f55b.png"
             },
         ]
