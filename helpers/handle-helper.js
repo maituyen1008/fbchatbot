@@ -555,10 +555,10 @@ async function detailProduct(sender_psid, id) {
     var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}₫.` + 
                 `\n${product.description}` +
                 `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}` + 
-                `${product.inventory > 0 && product.expired_date != null ? ('và có hạn sử dụng là ' + product.expired_date) : '' } `;
+                `${product.inventory > 0 && product.expired_date != null ? (' và có hạn sử dụng là ' + product.expired_date + ' (tham khảo)') : '' } `;
     await callSendAPI(sender_psid, {"text": message});
     let response = {
-        "text": "Mình có thể giúp gì cho bạn?",
+        "text": "Bạn có muốn đặt hàng?",
         "quick_replies": [
             {
                 "content_type": "text",
