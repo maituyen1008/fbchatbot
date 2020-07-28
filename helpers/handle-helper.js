@@ -472,6 +472,7 @@ async function getFacebookName(sender_psid) {
 
 async function getProductByName(sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
+    await insertTracking(sender_psid, 'search_product', name);
     var products = await getProductAPI(name);
     var elementsData = [];
     products.result && products.result.products.length > 0 && products.result.products.forEach(element => {
@@ -918,6 +919,11 @@ standardizePhone = function (phone) {
     phone = phone.replace(/\+[0-9]{2}/, "0");
     return phone.replace(/[^0-9]/g, "");
 };
+
+function insertTracking(sender_psid, type, value) {
+    var now = new Date();
+    db.query("INSERT INTO `tracking_click`(`psid`,`type`,`value`,`create_time`,`update_time`)VALUES('" + sender_psid + "', '" + sender_psid + "', '" + now + "', '" + now + "');");
+}
 
 module.exports = {
     handleMessage,
