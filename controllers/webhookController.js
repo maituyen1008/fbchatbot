@@ -37,14 +37,31 @@ function webhook(req, res, next) {
 
             // Gets the body of the webhook event
             let webhook_event = entry.messaging[0];
-            console.log(webhook_event);
+            console.log(global.user)
 
 
             // Get the sender PSID
             let sender_psid = webhook_event.sender.id;
-            console.log('Sender PSID: ' + sender_psid);
-            // Check if the event is a message or postback and
-            // pass the event to the appropriate handler function
+            if(!user[sender_psid]) user[sender_psid] = {}; 
+           
+            // check tình trạng người dùng! Nếu đang tắt chat bot -> check thời gian hết hiệu lực!
+            /* if(global.user[sender_psid] && !global.user[sender_psid].status) {
+                // nếu user tồn tại và trạng thái đang tắt chatbot -> check hết hạn tắt chưa
+                let updateTime = global.user[sender_psid].updateTime;
+                if(updateTime) {
+                    let dateExp = new Date();
+                    dateExp.setDate(dateExp.getDate() + 1);
+                    if(dateExp < updateTime.getDate()){ // hết hạn tắt => bật lại
+                        global.user[sender_psid].status = true;
+                        global.user[sender_psid].updateTime = new Date();
+                    } else {
+                        console.log('Đang tạm dừng chatbot với: ' + sender_psid);
+                        return;
+                    }
+                }
+                
+            } */
+
             if (webhook_event.message) {
                 handles.handleMessage(sender_psid, webhook_event.message);
             } else if (webhook_event.postback) {

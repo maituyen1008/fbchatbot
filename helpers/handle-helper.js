@@ -1,10 +1,14 @@
+const requestAPI = require('./requestAPI');
+
 const request = require('request');
 const fetch = require('node-fetch');
-// var db = require('./db-helper');
+const { finished } = require('stream');
 
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const PAGE_SIZE = 5;
 const GREETING_TEXT = ['bắt đầu', 'hi', 'xin chào', 'chào', 'alo', '.'];
+
+const WH_API_URL = '';
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -19,8 +23,8 @@ function handleMessage(sender_psid, received_message) {
 
     if (received_message.text) {
 
-        if(user[sender_psid].inprocess && ['getting_name', 'getting_address', 'getting_phone'].includes(user[sender_psid].inprocess)) {
-            order(sender_psid);
+        if (user[sender_psid].inprocess && ['getting_name', 'getting_address', 'getting_phone'].includes(user[sender_psid].inprocess)) {
+            order(sender_psid, received_message.text);
 
         } else if (GREETING_TEXT.includes(received_message.text.toLowerCase())) {
             greeting(sender_psid);
@@ -31,7 +35,7 @@ function handleMessage(sender_psid, received_message) {
         } else if (user[sender_psid].action == 'search_order_phone') {
             checkSearchOrderPhone(sender_psid, received_message.text);
 
-        } else if (user[sender_psid].action == 'search_order_code') {
+        } else if (user[sender_psid].action == 'search_order_code' && !received_message.quick_reply) {
             searchOrderInfo(sender_psid, received_message.text);
         } else if (user[sender_psid].action == 'notification_phone') {
             notification(sender_psid, received_message.text)
@@ -64,10 +68,17 @@ function handlePostback(sender_psid, postback) {
         user[sender_psid].action = 'chatting';
     }
 
+    delete global.user[sender_psid].inprocess;
+
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.split("_");
-        detailProduct(sender_psid, arr[arr.length -1]);
-    } else {
+        detailProduct(sender_psid, arr[arr.length - 1]);
+
+    } else if (postback.payload.includes("EVALUATE")) {
+        var arr = postback.payload.split("_");
+        postEvaluate(sender_psid, arr[arr.length - 1]);
+
+    } {
         switch (postback.payload) {
             case 'GET_STARTED':
                 greeting(sender_psid);
@@ -92,8 +103,15 @@ function handlePostback(sender_psid, postback) {
                     "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
                 });
                 break;
+            case 'CANCEL_TRACKING_ORDER':
+                global.user[sender_psid].action = 'chatting';
+                postQuickReplies(sender_psid);
+                break;
+            case 'CONTINUE_TRACKING_ORDER':
+                reSubmitOrderCode(sender_psid);
+                break;
             default:
-    
+
             /*
             case 'CONTACT':
                 contact(sender_psid);
@@ -107,14 +125,80 @@ function handlePostback(sender_psid, postback) {
             */
         }
     }
-   
+
 }
 
-async function order(sender_psid) {
+async function postNotifiOrder(sender_psid) {
+    /* let orderInfo = global.user[sender_psid].info;
+    let chatbotOrder = await requestAPI.send(WH_API_URL + 'service/chatbot/order', 'POST', {
+        name: orderInfo.name,
+        address: orderInfo.address,
+        phone: orderInfo.phone,
+        psid: sender_psid,
+        status: 'pending'
+    });
+
+    if(chatbotOrder.status == 'successful') {
+        global.user[sender_psid].info.latest_order = chatbotOrder;
+    } else {
+        console.log("Lỗi khi thông báo có đơn hàng: ", chatbotOrder);
+    } */
+
+}
+
+async function postEvaluate(sender_psid, value) {
+    
+
+    postQuickRepliesButton(sender_psid);
+}
+
+async function askForEvaluate(sender_psid) {
+
+    let response = {
+        "text": "Quý khách vui lòng đánh giá cho lần phục vụ này.",
+        "quick_replies": [
+            {
+                "content_type": "text",
+                "title": "1✯ Không hài lòng",
+                "payload": "EVALUATE_1"
+            },
+            {
+                "content_type": "text",
+                "title": "2✯ Tạm được",
+                "payload": "EVALUATE_2"
+            },
+            {
+                "content_type": "text",
+                "title": "3✯ Hài lòng",
+                "payload": "EVALUATE_3"
+            },
+            {
+                "content_type": "text",
+                "title": "4✯ Tốt",
+                "payload": "EVALUATE_4"
+            },
+            {
+                "content_type": "text",
+                "title": "5✯ Rất tốt",
+                "payload": "EVALUATE_5"
+            },
+        ]
+    }
+    await callSendAPI(sender_psid, response);
+}
+
+async function reSubmitOrderCode(sender_psid) {
+    global.user[sender_psid].action = 'search_order_code';
+    await callSendAPI(sender_psid, {
+        "text": `Quý khách vui lòng nhập mã đơn hàng.`
+    });
+}
+
+async function order(sender_psid, message = null) {
     if (!global.user[sender_psid])
         global.user[sender_psid] = {};
 
-    if(!global.user[sender_psid].inprocess) {
+    if (!global.user[sender_psid].inprocess) {
         // tạo trạng thái đang thu thập thông tin order
         global.user[sender_psid].inprocess = 'getting_name';
         await callSendAPI(sender_psid, {
@@ -127,14 +211,24 @@ async function order(sender_psid) {
         });
 
     } else if (global.user[sender_psid].inprocess == 'getting_name') {
-        global.user[sender_psid].inprocess = 'getting_address'
+        global.user[sender_psid].inprocess = 'getting_address';
+        if (typeof global.user[sender_psid].info == "undefined") {
+            global.user[sender_psid].info = {};
+        }
+        global.user[sender_psid].info.name = message;
+
         // Hỏi địa chỉ
         await callSendAPI(sender_psid, {
             "text": `Địa chỉ nhận hàng:`
         });
 
-    } else if(global.user[sender_psid].inprocess == 'getting_address') {
+    } else if (global.user[sender_psid].inprocess == 'getting_address') {
         global.user[sender_psid].inprocess = 'getting_phone';
+        if (typeof global.user[sender_psid].info == "undefined") {
+            global.user[sender_psid].info = {};
+        }
+        global.user[sender_psid].info.address = message;
+
         // Hỏi số điện thoại
         let response = {
             "text": "Số điện thoại liên hệ:",
@@ -145,20 +239,39 @@ async function order(sender_psid) {
                 }
             ]
         }
+
         await callSendAPI(sender_psid, response);
     } else if (global.user[sender_psid].inprocess == 'getting_phone') {
-        delete global.user[sender_psid].inprocess;
+        if (isValidPhone(message)) {
+            finishOrder(sender_psid, message);
 
-        callSendAPI(sender_psid, {
-            "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
-        });
+        } else {
+            global.user[sender_psid].inprocess = 'getting_phone';
+            reSubmitPhone(sender_psid);
+
+        }
     }
 
 }
 
+async function finishOrder(sender_psid, message) {
+    delete global.user[sender_psid].inprocess;
+    await callSendAPI(sender_psid, {
+        "text": 'Cảm ơn quý khách đã đặt hàng tại Chiaki! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất.'
+    });
+
+    if (typeof global.user[sender_psid].info == "undefined") {
+        global.user[sender_psid].info = {};
+    }
+    global.user[sender_psid].info.phone = message;
+
+    await postNotifiOrder(sender_psid);
+    await askForEvaluate(sender_psid);
+}
+
 function postQuickReplies(sender_psid) {
     let response = {
-        "text": "Mình có thể giúp gì cho bạn?",
+        "text": "Mình có thể giúp gì cho quý khách?",
         "quick_replies": [
             {
                 "content_type": "text",
@@ -175,8 +288,57 @@ function postQuickReplies(sender_psid) {
             {
                 "content_type": "text",
                 "title": "Tra cứu đơn hàng",
-                "payload": "CONTACT",
+                "payload": "TRACKING_ORDER",
                 "image_url": "https://s4.shopbay.vn/files/269/box-5ed06c7a0f21b.png"
+            }
+        ]
+    }
+    callSendAPI(sender_psid, response);
+}
+
+function postQuickRepliesButton(sender_psid) {
+    let response = {
+        "attachment": {
+            "type": "template",
+            "payload": {
+                "template_type": "button",
+                "text": "Quý khách cần giúp gì ạ?",
+                "buttons": [
+                    {
+                        "type": "postback",
+                        "title": "Đặt hàng",
+                        "payload": "SEARCH_PRODUCT"
+                    },
+                    {
+                        "type": "postback",
+                        "title": "Chat với tư vấn viên",
+                        "payload": "CONSULT"
+                    },
+                    {
+                        "type": "postback",
+                        "title": "Tra cứu đơn hàng",
+                        "payload": "TRACKING_ORDER"
+                    }
+                ]
+            }
+        }
+    }
+    callSendAPI(sender_psid, response);
+}
+
+function checkContinueTrackOrder(sender_psid) {
+    let response = {
+        "text": "Thử lại?",
+        "quick_replies": [
+            {
+                "content_type": "text",
+                "title": "Có, nhập lại mã",
+                "payload": "CONTINUE_TRACKING_ORDER",
+            },
+            {
+                "content_type": "text",
+                "title": "Bỏ qua",
+                "payload": "CANCEL_TRACKING_ORDER",
             }
         ]
     }
@@ -187,7 +349,7 @@ function postQuickReplies(sender_psid) {
 async function callSendAPI(sender_psid, response, typing = true) {
 
     if (typing) {
-        setTypeStatus(sender_psid, true);
+        await setTypeStatus(sender_psid, true);
     }
 
     return new Promise(function (resolve, reject) {
@@ -222,7 +384,7 @@ async function callSendAPI(sender_psid, response, typing = true) {
     });
 }
 
-function setTypeStatus(sender_psid, isTyping = true) {
+async function setTypeStatus(sender_psid, isTyping = true) {
     let type_on = {
         "recipient": {
             "id": sender_psid
@@ -240,17 +402,32 @@ function setTypeStatus(sender_psid, isTyping = true) {
         typeStatus = type_off;
     }
 
-    request({
-        "uri": "https://graph.facebook.com/v2.6/me/messages",
-        "qs": { "access_token": PAGE_ACCESS_TOKEN },
-        "method": "POST",
-        "json": typeStatus
+    return new Promise(function (resolve, reject) {
+        request({
+            "uri": "https://graph.facebook.com/v2.6/me/messages",
+            "qs": { "access_token": PAGE_ACCESS_TOKEN },
+            "method": "POST",
+            "json": typeStatus
+        }, (err, res, body) => {
+            if (!err) {
+                console.log("typing status updated");
+                resolve(true)
+            } else {
+                console.log("typing status update fail");
+                reject(err);
+            }
+        });
+
     });
 }
 
 async function greeting(sender_psid) {
+    if (global.user[sender_psid]) { // && !global.user[sender_psid].status
 
-    if (global.user[sender_psid] && !global.user[sender_psid].status) {
+        global.user[sender_psid].action = 'chatting';
+        if (global.user[sender_psid].inprocess)
+            delete global.user[sender_psid].inprocess;
+
         // nếu user tồn tại và trạng thái đang tắt chatbot -> check hết hạn tắt chưa
         let updateTime = global.user[sender_psid].updateTime;
         if (updateTime) {
@@ -269,7 +446,7 @@ async function greeting(sender_psid) {
 
     let fullName = await getFacebookName(sender_psid);
     await callSendAPI(sender_psid, {
-        "text": `Chào mừng bạn đến với Chiaki - Siêu thị trực tuyến hàng đầu Việt Nam`
+        "text": `Chào mừng quý khách đến với Chiaki - Siêu thị trực tuyến hàng đầu Việt Nam`
     });
 
     postQuickReplies(sender_psid);
@@ -316,7 +493,7 @@ async function getProductByName(sender_psid, name = null) {
             } */
             {
                 "type": "postback",
-                "title": element.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng" ,
+                "title": element.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng",
                 "payload": element.inventory > 0 ? "ORDER" : "NOTIFICATION",
             },
             {
@@ -349,18 +526,28 @@ async function getProductByName(sender_psid, name = null) {
     await callSendAPI(sender_psid, response);
 }
 
-/* async function thanks(sender_psid, phone) {
+async function thanks(sender_psid, phone) {
     user[sender_psid].action == 'chatting';
     let fullName = await getFacebookName(sender_psid);
     db.query("INSERT INTO `contact`(`full_name`,`psid`,`phone`)VALUES('" + fullName + "', '" + sender_psid + "', '" + phone + "');");
     await callSendAPI(sender_psid, {
         "text": `Cảm ơn quý khách đã để lại thông tin liên hệ. Chúng tôi sẽ gọi điện cho quý khách trong thời gian sớm nhất. Trân trọng!`
     });
-} */
+}
 async function reSubmitPhone(sender_psid) {
     await callSendAPI(sender_psid, {
         "text": `Số điện thoại không đúng định dạng. Vui lòng nhập lại số điện thoại.`,
     });
+    let response = {
+        "text": "Số điện thoại liên hệ:",
+        "quick_replies": [
+            {
+                "content_type": "user_phone_number",
+                "payload": "PHONE_NUMBER"
+            }
+        ]
+    }
+    await callSendAPI(sender_psid, response);
 }
 
 async function searchProduct(sender_psid) {
@@ -398,7 +585,7 @@ async function searchOrder(sender_psid) {
 async function checkSearchOrderPhone(sender_psid, message) {
     if (isValidPhone(message)) {
         user[sender_psid].action = 'search_order_code';
-        phone[sender_psid] = message;
+        phone[sender_psid] = standardizePhone(message);
         await callSendAPI(sender_psid, {
             "text": `Quý khách vui lòng nhập mã đơn hàng.`
         });
@@ -415,24 +602,27 @@ async function searchOrderInfo(sender_psid, message) {
         let items = response.result.items;
         switch (order.status.code) {
             case 'pending':
-                message = `Đơn hàng của bạn đang được chờ xác nhận.`;
+                message = `Đơn hàng của quý khách đang được chờ xác nhận.`;
                 break;
             case 'confirmed':
-                message = `Đơn hàng của bạn đã được xác nhận và sẽ được giao cho bên vận chuyển sớm nhất.`;
+                message = `Đơn hàng của quý khách đã được xác nhận và sẽ được giao cho bên vận chuyển sớm nhất.`;
                 break;
             case 'success':
-                message = `Đơn hàng của bạn đã được giao thành công.`;
+                message = `Đơn hàng của quý khách đã được giao thành công.`;
                 break;
             case 'delivering':
-                message = `Đơn hàng của bạn đã được giao cho ` + order.shipper_full_name + (order.shipper_code && order.shipper_code != null ? `, mã giao vận là ` + order.shipper_code : ``);
+                message = `Đơn hàng của quý khách đã được giao cho ` + order.shipper_full_name + (order.shipper_code && order.shipper_code != null ? `, mã giao vận là ` + order.shipper_code : ``);
                 break;
             case 'cancel':
-                message = `Đơn hàng của bạn đã bị hủy.`;
+                message = `Đơn hàng của quý khách đã bị hủy.`;
                 break;
             default:
                 break;
         }
-        let timestamp = order.sync_id.substr(0,10);
+
+        let createdTime = mysqlTimeStampToDate(order.create_time);
+        let timestamp = createdTime.getTime() / 1000;
+
         let elements = [];
 
         for (var i = 0; i < items.length; i++) {
@@ -460,8 +650,8 @@ async function searchOrderInfo(sender_psid, message) {
                     "address": {
                         "street_1": order.delivery_address,
                         "street_2": order.shipping.name,
-                        "city": order.status.status,
-                        "postal_code": "10000",
+                        "city": "100000",
+                        "postal_code": " Trạng thái: " + order.status.status,
                         "state": "HN",
                         "country": "VI"
                     },
@@ -473,14 +663,22 @@ async function searchOrderInfo(sender_psid, message) {
                     "elements": elements
                 }
             }
-    
-         }
 
-        await callSendAPI(sender_psid, {text: message});
+        }
+
+        await callSendAPI(sender_psid, { text: message });
         await callSendAPI(sender_psid, object);
 
+        postQuickReplies(sender_psid);
+
+    } else {
+        await callSendAPI(sender_psid, {
+            "text": `Có lỗi xảy ra! vui lòng kiểm tra lại mã đơn hàng.`,
+        });
+        checkContinueTrackOrder(sender_psid);
+        return;
     }
-    
+
     user[sender_psid].action = 'chatting';
 }
 
@@ -521,7 +719,7 @@ async function contact(sender_psid) {
 async function consult(sender_psid) {
 
     await callSendAPI(sender_psid, {
-        "text": 'Cảm ơn bạn đã quan tâm! Nhân viên hỗ trợ sẽ liên hệ với bạn trong thời gian sớm nhất!' + ' (' + sender_psid + ')',
+        "text": 'Cảm ơn quý khách đã quan tâm! Nhân viên hỗ trợ sẽ liên hệ với quý khách trong thời gian sớm nhất!',
     });
     if (!global.user[sender_psid])
         global.user[sender_psid] = {};
@@ -538,7 +736,7 @@ async function notificationPhone(sender_psid) {
     });
 }
 
-async function notification (sender_psid, message) {
+async function notification(sender_psid, message) {
     if (isValidPhone(message)) {
         user[sender_psid].action = 'chatting';
         await callSendAPI(sender_psid, {
@@ -552,11 +750,21 @@ async function notification (sender_psid, message) {
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
     product = product.result;
-    var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}₫.` + 
-                `\n${product.description}` +
-                `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}` + 
-                `${product.inventory > 0 && product.expired_date != null ? (' và có hạn sử dụng là ' + product.expired_date + ' (tham khảo)') : '' } `;
-    await callSendAPI(sender_psid, {"text": message});
+
+    let datestring = 'không rõ';
+    let expTime = mysqlTimeStampToDate(product.expired_date);
+    if (expTime) {
+        datestring = ("0" + expTime.getDate()).slice(-2) + "/" + ("0" + (expTime.getMonth() + 1)).slice(-2) + "/" +
+            expTime.getFullYear();
+    }
+
+    var message = `Sản phẩm "${product.name}" của hãng sản xuất ${product.manufacturer}, nguồn gốc ${product.product_origin} có giá: ${moneyToString(product.sale_price)}₫.` +
+        `\n${product.description}` +
+        `\nSản phẩm hiện ${product.inventory > 0 ? 'còn hàng' : 'hết hàng'}`;
+
+    // `${product.inventory > 0 && product.expired_date != null ? (' và có hạn sử dụng: ' + datestring + ' (tham khảo)') : ''} `;
+
+    await callSendAPI(sender_psid, { "text": message });
     let response = {
         "text": "Bạn có muốn đặt hàng?",
         "quick_replies": [
@@ -576,6 +784,15 @@ async function detailProduct(sender_psid, id) {
     }
     await callSendAPI(sender_psid, response);
     user[sender_psid].action = 'chatting';
+}
+
+function mysqlTimeStampToDate(timestamp) {
+    if (!timestamp) return null;
+    //function parses mysql datetime string and returns javascript Date object
+    //input has to be in this format: 2007-06-05 15:26:02
+    var regex = /^([0-9]{2,4})-([0-1][0-9])-([0-3][0-9]) (?:([0-2][0-9]):([0-5][0-9]):([0-5][0-9]))?$/;
+    var parts = timestamp.replace(regex, "$1 $2 $3 $4 $5 $6").split(' ');
+    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
 }
 
 function getProductById(id) {
@@ -697,7 +914,8 @@ standardizePhone = function (phone) {
     if (phone == null) {
         return phone;
     }
-    //ELSE:
+
+    phone = phone.replace(/\+[0-9]{2}/, "0");
     return phone.replace(/[^0-9]/g, "");
 };
 
