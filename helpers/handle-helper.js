@@ -3,7 +3,7 @@ const requestAPI = require('./requestAPI');
 const request = require('request');
 const fetch = require('node-fetch');
 const { finished } = require('stream');
-
+const db = require('./db-helper');
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const PAGE_SIZE = 5;
 const GREETING_TEXT = ['bắt đầu', 'hi', 'xin chào', 'chào', 'alo', '.'];
