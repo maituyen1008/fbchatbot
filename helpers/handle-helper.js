@@ -3,12 +3,12 @@ const requestAPI = require('./requestAPI');
 const request = require('request');
 const fetch = require('node-fetch');
 const { finished } = require('stream');
-const db = require('./db-helper');
+const API_TOKEN = process.env.API_TOKEN;
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const PAGE_SIZE = 5;
 const GREETING_TEXT = ['bắt đầu', 'hi', 'xin chào', 'chào', 'alo', '.'];
 
-const WH_API_URL = '';
+const WH_API_URL = process.env.WH_API_URL;
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
@@ -51,18 +51,6 @@ function handleMessage(sender_psid, received_message) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, postback) {
-    /* if (postback.payload.includes('CONSULT')) {
-
-        if (postback.payload == 'CONSULT') {
-            consult(sender_psid);
-        }
-         else { // không dùng cái này nữa
-            var regex = /_(\w+)$/gm;
-            var arr = regex.exec(postback.payload);
-            consult(sender_psid, arr[1]);
-        }
-
-    } */
     if (user[sender_psid] == null) {
         user[sender_psid] = {};
         user[sender_psid].action = 'chatting';
@@ -73,6 +61,14 @@ function handlePostback(sender_psid, postback) {
     if (postback.payload.includes("DETAIL_PRODUCT")) {
         var arr = postback.payload.split("_");
         detailProduct(sender_psid, arr[arr.length - 1]);
+
+    } else if (postback.payload.includes("ORDER")) {
+        var arr = postback.payload.split("_");
+        if (typeof global.user[sender_psid].info == "undefined") {
+            global.user[sender_psid].info = {};
+        }
+        global.user[sender_psid].info.product_id = arr[arr.length - 1];
+        order(sender_psid);
 
     } else if (postback.payload.includes("EVALUATE")) {
         var arr = postback.payload.split("_");
@@ -88,9 +84,6 @@ function handlePostback(sender_psid, postback) {
                 break;
             case 'TRACKING_ORDER':
                 searchOrder(sender_psid);
-                break;
-            case 'ORDER':
-                order(sender_psid);
                 break;
             case 'NOTIFICATION':
                 notificationPhone(sender_psid);
@@ -129,26 +122,61 @@ function handlePostback(sender_psid, postback) {
 }
 
 async function postNotifiOrder(sender_psid) {
-    /* let orderInfo = global.user[sender_psid].info;
-    let chatbotOrder = await requestAPI.send(WH_API_URL + 'service/chatbot/order', 'POST', {
-        name: orderInfo.name,
-        address: orderInfo.address,
-        phone: orderInfo.phone,
-        psid: sender_psid,
-        status: 'pending'
-    });
+    let product = await getProductById(global.user[sender_psid].info.product_id);
+    product = product.result;
+    let orderInfo = global.user[sender_psid].info;
 
-    if(chatbotOrder.status == 'successful') {
-        global.user[sender_psid].info.latest_order = chatbotOrder;
-    } else {
-        console.log("Lỗi khi thông báo có đơn hàng: ", chatbotOrder);
-    } */
+    let inoutputData = {
+        inoutput: {
+            status: "pending",
+            amount: product.sale_price,
+            delivery_address: orderInfo.address,
+            related_user_name: orderInfo.name,
+            source: "fb-chatbot",
+            payment_type: "home",
+            is_draft: 1,
+            draft_data: {
+                "phone": orderInfo.phone,
+                "full_name": orderInfo.name,
+                "email": "",
+                "address": orderInfo.address,
+                "payment_type": "home",
+                "type": "customer"
+            }
+        },
+        inoutput_item: [
+            {
+                product_id: product.id,
+                quantity: 1,
+                unit_price: product.sale_price,
+                product_name: product.title,
+                product_code: product.code
+            }
+        ]
+    }
+
+    // let orderInfo = global.user[sender_psid].info;
+    // let chatbotOrder = await requestAPI.send(WH_API_URL + 'service/chatbot/order', 'POST', {
+    //     name: orderInfo.name,
+    //     address: orderInfo.address,
+    //     phone: orderInfo.phone,
+    //     psid: sender_psid,
+    //     status: 'pending'
+    // });
+
+    // if(chatbotOrder.status == 'successful') {
+    //     global.user[sender_psid].info.latest_order = chatbotOrder;
+    // } else {
+    //     console.log("Lỗi khi thông báo có đơn hàng: ", chatbotOrder);
+    // }
 
 }
 
 async function postEvaluate(sender_psid, value) {
-    
-
+    await insertTracking(sender_psid, 'vote', value);
+    await callSendAPI(sender_psid, {
+        "text": `Cảm ơn quý khách đã đánh giá.`
+    });
     postQuickRepliesButton(sender_psid);
 }
 
@@ -495,7 +523,7 @@ async function getProductByName(sender_psid, name = null) {
             {
                 "type": "postback",
                 "title": element.inventory > 0 ? "Đặt hàng" : "Báo tôi khi có hàng",
-                "payload": element.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                "payload": element.inventory > 0 ? "ORDER_" + element.id : "NOTIFICATION",
             },
             {
                 "type": "postback",
@@ -597,6 +625,7 @@ async function checkSearchOrderPhone(sender_psid, message) {
 
 async function searchOrderInfo(sender_psid, message) {
     var response = await getOrderInfo(phone[sender_psid], message);
+    await insertTracking(sender_psid, 'tracking_order', message);
     var message = `Có lỗi xảy ra. Vui lòng kiểm tra lại số điện thoại hoặc mã đơn hàng.`;
     if (response.status == 'successful' && response.result.order) {
         let order = response.result.order;
@@ -751,7 +780,7 @@ async function notification(sender_psid, message) {
 async function detailProduct(sender_psid, id) {
     var product = await getProductById(id);
     product = product.result;
-
+    await insertTracking(sender_psid, 'detail_product', product.code);
     let datestring = 'không rõ';
     let expTime = mysqlTimeStampToDate(product.expired_date);
     if (expTime) {
@@ -778,7 +807,7 @@ async function detailProduct(sender_psid, id) {
             {
                 "content_type": "text",
                 "title": product.inventory > 0 ? "Đặt hàng" : "Báo khi có hàng",
-                "payload": product.inventory > 0 ? "ORDER" : "NOTIFICATION",
+                "payload": product.inventory > 0 ? "ORDER_" + id : "NOTIFICATION",
                 "image_url": product.inventory > 0 ? "https://s4.shopbay.vn/files/1/order-5f0d80ec87801.png" : "https://s4.shopbay.vn/files/1/call-5f0e658d1f55b.png"
             },
         ]
@@ -921,8 +950,11 @@ standardizePhone = function (phone) {
 };
 
 function insertTracking(sender_psid, type, value) {
-    var now = new Date();
-    db.query("INSERT INTO `tracking_click`(`psid`,`type`,`value`,`create_time`,`update_time`)VALUES('" + sender_psid + "', '" + sender_psid + "', '" + now + "', '" + now + "');");
+    let response = await requestAPI.send(WH_API_URL + '/service/save-facebook-chatbot-tracking', 'POST', {
+        psid: sender_psid,
+        type: type,
+        value: value
+    });
 }
 
 module.exports = {
