@@ -3,11 +3,11 @@ const requestAPI = require('./requestAPI');
 const request = require('request');
 const fetch = require('node-fetch');
 const { finished } = require('stream');
-const API_TOKEN = process.env.API_TOKEN;
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const PAGE_SIZE = 5;
 const GREETING_TEXT = ['bắt đầu', 'hi', 'xin chào', 'chào', 'alo', '.'];
 
+const API_TOKEN = process.env.API_TOKEN;
 const WH_API_URL = process.env.WH_API_URL;
 
 // Handles messages events
@@ -155,20 +155,20 @@ async function postNotifiOrder(sender_psid) {
         ]
     }
 
-    // let orderInfo = global.user[sender_psid].info;
-    // let chatbotOrder = await requestAPI.send(WH_API_URL + 'service/chatbot/order', 'POST', {
-    //     name: orderInfo.name,
-    //     address: orderInfo.address,
-    //     phone: orderInfo.phone,
-    //     psid: sender_psid,
-    //     status: 'pending'
-    // });
+    /* let orderInfo = global.user[sender_psid].info;
+    let chatbotOrder = await requestAPI.send(WH_API_URL + 'service/chatbot/order', 'POST', {
+        name: orderInfo.name,
+        address: orderInfo.address,
+        phone: orderInfo.phone,
+        psid: sender_psid,
+        status: 'pending'
+    });
 
-    // if(chatbotOrder.status == 'successful') {
-    //     global.user[sender_psid].info.latest_order = chatbotOrder;
-    // } else {
-    //     console.log("Lỗi khi thông báo có đơn hàng: ", chatbotOrder);
-    // }
+    if(chatbotOrder.status == 'successful') {
+        global.user[sender_psid].info.latest_order = chatbotOrder;
+    } else {
+        console.log("Lỗi khi thông báo có đơn hàng: ", chatbotOrder);
+    } */
 
 }
 
