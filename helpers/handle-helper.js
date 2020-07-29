@@ -500,7 +500,7 @@ async function getFacebookName(sender_psid) {
 
 async function getProductByName(sender_psid, name = null) {
     setTypeStatus(sender_psid, true);
-    // await insertTracking(sender_psid, 'search_product', name);
+    await insertTracking(sender_psid, 'search_product', name);
     var products = await getProductAPI(name);
     var elementsData = [];
     products.result && products.result.products.length > 0 && products.result.products.forEach(element => {
@@ -592,7 +592,7 @@ async function getProductAPI(name) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            uri: "http://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=" + PAGE_SIZE,
+            uri: "https://api.chiaki.vn/api/search/" + encodeURI(name) + "?page_id=0&page_size=" + PAGE_SIZE,
             method: 'GET'
         }, (err, res, body) => {
             if (!err) {
@@ -953,7 +953,8 @@ async function insertTracking(sender_psid, type, value) {
     let response = await requestAPI.send(WH_API_URL + '/service/save-facebook-chatbot-tracking', 'POST', {
         psid: sender_psid,
         type: type,
-        value: value
+        value: value,
+        token: API_TOKEN
     });
 }
 
