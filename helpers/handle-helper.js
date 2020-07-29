@@ -949,7 +949,7 @@ standardizePhone = function (phone) {
     return phone.replace(/[^0-9]/g, "");
 };
 
-function insertTracking(sender_psid, type, value) {
+async function insertTracking(sender_psid, type, value) {
     let response = await requestAPI.send(WH_API_URL + '/service/save-facebook-chatbot-tracking', 'POST', {
         psid: sender_psid,
         type: type,
